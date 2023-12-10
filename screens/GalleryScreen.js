@@ -11,7 +11,7 @@ import {
 import * as MediaLibrary from 'expo-media-library'
 import MetadataScreen from './MetadataScreen'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useIsFocused } from '@react-navigation/native'
 
 const GalleryScreen = () => {
   const [albumPhotos, setAlbumPhotos] = useState([])
@@ -19,23 +19,43 @@ const GalleryScreen = () => {
   const [selectedMetadata, setSelectedMetadata] = useState(null)
   const [savedImages, setSavedImages] = useState([])
   const [refreshKey, setRefreshKey] = useState(0)
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  const loadDarkModeState = async () => {
+    const darkModeValue = await AsyncStorage.getItem('darkMode')
+    if (darkModeValue !== null) {
+      setIsDarkMode(JSON.parse(darkModeValue))
+    }
+  }
+
+  const isFocused = useIsFocused()
 
   useEffect(() => {
-    getImagesFromDatabase()
-  }, [refreshKey])
+    if (isFocused) {
+      loadDarkModeState()
+    }
+  }, [isFocused])
 
   useEffect(() => {
-    ;(async () => {
-      const album = await MediaLibrary.getAlbumAsync('DCIM')
-      if (album) {
-        const photos = await MediaLibrary.getAssetsAsync({
-          album: album,
-          mediaType: 'photo',
-        })
-        setAlbumPhotos(photos.assets)
-      }
-    })()
-  }, [refreshKey])
+    if (isFocused) {
+      getImagesFromDatabase()
+    }
+  }, [isFocused, refreshKey])
+
+  useEffect(() => {
+    if (isFocused) {
+      ;(async () => {
+        const album = await MediaLibrary.getAlbumAsync('DCIM')
+        if (album) {
+          const photos = await MediaLibrary.getAssetsAsync({
+            album: album,
+            mediaType: 'photo',
+          })
+          setAlbumPhotos(photos.assets)
+        }
+      })()
+    }
+  }, [isFocused, refreshKey])
 
   const getImagesFromDatabase = async () => {
     try {
@@ -85,13 +105,21 @@ const GalleryScreen = () => {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#000',
-      paddingHorizontal: 5,
+      backgroundColor: isDarkMode ? '#000' : '#fff',
     },
     image: {
       width: imageWidth,
       height: imageWidth,
       margin: 5,
+    },
+    settingItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '80%',
+      marginBottom: 20,
+      paddingHorizontal: 10,
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
     },
     footer: {
       position: 'absolute',
@@ -103,13 +131,17 @@ const GalleryScreen = () => {
       flexDirection: 'row',
       justifyContent: 'space-around',
       alignItems: 'center',
-      backgroundColor: '#eee',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
       height: 50,
     },
     tabItem: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
+    },
+    text: {
+      color: isDarkMode ? '#fff' : '#000',
     },
   })
 
@@ -126,8 +158,8 @@ const GalleryScreen = () => {
   const CustomTabBar = () => {
     const navigation = useNavigation()
 
-    const goToHomeScreen = () => {
-      navigation.navigate('Home')
+    const goToSettingsScreen = () => {
+      navigation.navigate('Settings')
     }
 
     const goToCameraScreen = () => {
@@ -136,11 +168,14 @@ const GalleryScreen = () => {
 
     return (
       <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tabItem} onPress={goToHomeScreen}>
-          <Text>Home</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.tabItem} onPress={goToCameraScreen}>
-          <Text>Camera</Text>
+          <Text style={styles.text}>Camera</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem}>
+          <Text style={styles.text}>Gallery</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={goToSettingsScreen}>
+          <Text style={styles.text}>Settings</Text>
         </TouchableOpacity>
       </View>
     )

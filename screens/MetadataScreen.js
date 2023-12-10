@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -12,6 +12,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as MediaLibrary from 'expo-media-library'
 
 const MetadataScreen = ({ visible, metadata, onClose }) => {
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    loadDarkModeState()
+  }, [])
+
+  const loadDarkModeState = async () => {
+    const darkModeValue = await AsyncStorage.getItem('darkMode')
+    if (darkModeValue !== null) {
+      setIsDarkMode(JSON.parse(darkModeValue))
+    }
+  }
   if (!metadata) {
     return null
   }
@@ -67,7 +79,7 @@ const MetadataScreen = ({ visible, metadata, onClose }) => {
     if (item.subEntries) {
       return (
         <View>
-          <Text style={styles.title}>{item.key}</Text>
+          <Text style={styles.text}>{item.key}</Text>
           <FlatList
             data={item.subEntries}
             renderItem={renderSubItem}
@@ -118,11 +130,59 @@ const MetadataScreen = ({ visible, metadata, onClose }) => {
     ])
   }
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#000' : '#fff',
+    },
+    modal: {
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
+      padding: 20,
+      borderRadius: 10,
+      elevation: 5,
+      maxHeight: '80%',
+      width: '90%',
+    },
+    text: {
+      fontSize: 25,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    closeButton: {
+      fontSize: 16,
+      color: isDarkMode ? 'lightblue' : 'blue',
+      marginTop: 20,
+    },
+    item: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 5,
+    },
+    label: {
+      fontWeight: 'bold',
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 5,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    value: {
+      flex: 1,
+      marginLeft: 5,
+      color: isDarkMode ? '#fff' : '#000',
+    },
+  })
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.container}>
         <View style={styles.modal}>
-          <Text style={styles.text}>Metadata:</Text>
+          <Text style={styles.text}>Metadata</Text>
           <FlatList
             data={formattedMetadata}
             renderItem={renderMetadataItem}
@@ -139,49 +199,5 @@ const MetadataScreen = ({ visible, metadata, onClose }) => {
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modal: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    elevation: 5,
-    maxHeight: '80%',
-    width: '90%',
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  closeButton: {
-    fontSize: 16,
-    color: 'blue',
-    marginTop: 10,
-  },
-  item: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  label: {
-    fontWeight: 'bold',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  value: {
-    flex: 1,
-    marginLeft: 5,
-  },
-})
 
 export default MetadataScreen

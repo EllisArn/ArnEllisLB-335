@@ -1,40 +1,65 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import * as Location from 'expo-location'
 import { DeviceMotion } from 'expo-sensors'
 import { Camera } from 'expo-camera'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 
 const CameraScreen = () => {
   const [hasPermission, setHasPermission] = useState(null)
   const [type, setType] = useState(Camera.Constants.Type.back)
-  const cameraRef = useRef(null)
   const [isTakingPicture, setIsTakingPicture] = useState(false)
+  const cameraRef = useRef(null)
+  const [loaded, setLoaded] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
-    ;(async () => {
-      const cameraPermission = await Camera.requestCameraPermissionsAsync()
-      const DeviceMotionPermission =
-        await DeviceMotion.requestPermissionsAsync()
-      const locationPermission =
-        await Location.requestForegroundPermissionsAsync()
-      const mediaLibraryPermission =
-        await MediaLibrary.requestPermissionsAsync()
-
-      if (
-        cameraPermission.status === 'granted' &&
-        DeviceMotionPermission.status === 'granted' &&
-        locationPermission.status === 'granted' &&
-        mediaLibraryPermission.status === 'granted'
-      ) {
-        setHasPermission(true)
-      } else {
-        setHasPermission(false)
-      }
-    })()
+    loadDarkModeState()
   }, [])
+
+  const loadDarkModeState = async () => {
+    const darkModeValue = await AsyncStorage.getItem('darkMode')
+    if (darkModeValue !== null) {
+      setIsDarkMode(JSON.parse(darkModeValue))
+    }
+  }
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const initCamera = async () => {
+        const cameraPermission = await Camera.requestCameraPermissionsAsync()
+        const DeviceMotionPermission =
+          await DeviceMotion.requestPermissionsAsync()
+        const locationPermission =
+          await Location.requestForegroundPermissionsAsync()
+        const mediaLibraryPermission =
+          await MediaLibrary.requestPermissionsAsync()
+        loadDarkModeState()
+        if (
+          cameraPermission.status === 'granted' &&
+          DeviceMotionPermission.status === 'granted' &&
+          locationPermission.status === 'granted' &&
+          mediaLibraryPermission.status === 'granted'
+        ) {
+          setHasPermission(true)
+        } else {
+          setHasPermission(false)
+        }
+      }
+
+      initCamera()
+      setLoaded(true)
+
+      return () => {
+        if (cameraRef.current) {
+          cameraRef.current.pausePreview()
+        }
+        setLoaded(false)
+      }
+    }, [])
+  )
 
   const takePicture = async () => {
     if (isTakingPicture) return
@@ -53,20 +78,15 @@ const CameraScreen = () => {
 
     if (cameraRef.current) {
       try {
-        // Erfassen der Sensordaten
-
-        // Erfassen der Wetterdaten
         const { coords } = await getLocation()
         const { latitude, longitude } = coords
 
-        // Reverse Geocoding, um die Adresse zu erhalten
         const address = await Location.reverseGeocodeAsync({
           latitude,
           longitude,
         })
 
         const weatherData = await getWeather(latitude, longitude)
-
         const currentWeather = weatherData.current
         const timezoneOffsetHours = weatherData.timezone_offset / 3600 // Convert seconds to hours
 
@@ -171,6 +191,90 @@ const CameraScreen = () => {
     }
   }
 
+  const CustomTabBar = () => {
+    const navigation = useNavigation()
+
+    const goToSettingsScreen = () => {
+      navigation.navigate('Settings')
+    }
+
+    const goToGalleryScreen = () => {
+      navigation.navigate('Gallery')
+    }
+
+    return (
+      <View style={styles.tabBar}>
+        <TouchableOpacity style={styles.tabItem}>
+          <Text style={styles.text}>Camera</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={goToGalleryScreen}>
+          <Text style={styles.text}>Gallery</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={goToSettingsScreen}>
+          <Text style={styles.text}>Settings</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#000' : '#fff',
+    },
+    cameraContainer: {
+      flex: 1,
+      width: '100%',
+    },
+    camera: {
+      flex: 1,
+      width: '100%',
+    },
+    buttonContainer: {
+      position: 'absolute',
+      bottom: 60,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      width: '100%',
+    },
+    button: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: '#fff',
+      marginHorizontal: 15,
+    },
+    image: {
+      width: 200,
+      height: 200,
+      marginTop: 20,
+    },
+    footer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
+      height: 50,
+    },
+    tabItem: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
+    },
+    text: {
+      color: isDarkMode ? '#fff' : '#000',
+    },
+  })
+
   return (
     <View style={styles.container}>
       {hasPermission === null ? (
@@ -179,21 +283,23 @@ const CameraScreen = () => {
         <Text>No access to camera</Text>
       ) : (
         <View style={styles.cameraContainer}>
-          <Camera
-            style={styles.camera}
-            type={type}
-            ratio={'16:9'}
-            ref={(ref) => {
-              cameraRef.current = ref
-            }}
-          >
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => takePicture()}
-              ></TouchableOpacity>
-            </View>
-          </Camera>
+          {loaded && (
+            <Camera
+              style={styles.camera}
+              type={type}
+              ratio={'16:9'}
+              ref={(ref) => {
+                cameraRef.current = ref
+              }}
+            >
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => takePicture()}
+                ></TouchableOpacity>
+              </View>
+            </Camera>
+          )}
         </View>
       )}
       <View style={styles.footer}>
@@ -225,82 +331,5 @@ async function getWeather(latitude, longitude) {
     throw error
   }
 }
-
-const CustomTabBar = () => {
-  const navigation = useNavigation()
-
-  const goToHomeScreen = () => {
-    navigation.navigate('Home')
-  }
-
-  const goToGalleryScreen = () => {
-    navigation.navigate('Gallery')
-  }
-
-  return (
-    <View style={styles.tabBar}>
-      <TouchableOpacity style={styles.tabItem} onPress={goToHomeScreen}>
-        <Text>Home</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.tabItem} onPress={goToGalleryScreen}>
-        <Text>Gallery</Text>
-      </TouchableOpacity>
-    </View>
-  )
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-  cameraContainer: {
-    flex: 1,
-    width: '100%',
-  },
-  camera: {
-    flex: 1,
-    width: '100%',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 60,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  button: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fff',
-    marginHorizontal: 15,
-  },
-  image: {
-    width: 200,
-    height: 200,
-    marginTop: 20,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#eee',
-    height: 50,
-  },
-  tabItem: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-})
 
 export default CameraScreen
