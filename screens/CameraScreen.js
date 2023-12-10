@@ -18,11 +18,14 @@ const CameraScreen = () => {
         await Accelerometer.requestPermissionsAsync()
       const locationPermission =
         await Location.requestForegroundPermissionsAsync()
+      const mediaLibraryPermission =
+        await MediaLibrary.requestPermissionsAsync()
 
       if (
         cameraPermission.status === 'granted' &&
         accelerometerPermission.status === 'granted' &&
-        locationPermission.status === 'granted'
+        locationPermission.status === 'granted' &&
+        mediaLibraryPermission.status === 'granted'
       ) {
         setHasPermission(true)
       } else {
@@ -30,7 +33,6 @@ const CameraScreen = () => {
       }
     })()
   }, [])
-
   const takePicture = async () => {
     if (cameraRef.current) {
       try {
@@ -70,7 +72,11 @@ const CameraScreen = () => {
         const asset = await MediaLibrary.createAssetAsync(photo.uri)
         await MediaLibrary.createAlbumAsync('Momentograph', asset, false)
 
+        // Extrahiere den Dateinamen aus der URI
+        const filename = asset.uri.split('/').pop()
+
         const metadata = {
+          filename: filename,
           address,
           latitude: weatherData.lat.toString() + '°',
           longitude: weatherData.lon.toString() + '°',
@@ -110,7 +116,6 @@ const CameraScreen = () => {
       const imagesArray = images ? JSON.parse(images) : []
       imagesArray.push({ asset: imageAsset, metadata: metadata })
       await AsyncStorage.setItem('images', JSON.stringify(imagesArray))
-      console.log('Image saved to database:', metadata)
     } catch (error) {
       console.error('Error saving image to database:', error)
     }
@@ -161,7 +166,6 @@ async function getWeather(latitude, longitude) {
       `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&exclude=minutely,hourly,daily,alerts&units=metric&appid=${process.env.EXPO_PUBLIC_WEATHER_API_KEY}`
     )
     const data = await response.json()
-    console.log(data)
     return data
   } catch (error) {
     console.error('Error fetching weather data:', error)

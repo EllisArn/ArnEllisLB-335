@@ -11,7 +11,7 @@ import * as MediaLibrary from 'expo-media-library'
 import MetadataScreen from './MetadataScreen' // Passe den Importpfad an
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const GalleryScreen = ({ navigation }) => {
+const GalleryScreen = () => {
   const [albumPhotos, setAlbumPhotos] = useState([])
   const [metadataVisible, setMetadataVisible] = useState(false)
   const [selectedMetadata, setSelectedMetadata] = useState(null)
@@ -31,7 +31,7 @@ const GalleryScreen = ({ navigation }) => {
           album: album,
           mediaType: 'photo',
         })
-        console.log('Photos from album:', photos.assets)
+        console.log('Photos from album:', photos)
         setAlbumPhotos(photos.assets)
       }
     })()
@@ -41,6 +41,7 @@ const GalleryScreen = ({ navigation }) => {
     try {
       const images = await AsyncStorage.getItem('images')
       if (images) {
+        console.log('Images from database:', images)
         const imagesArray = JSON.parse(images)
         setSavedImages(imagesArray)
       }
@@ -52,9 +53,15 @@ const GalleryScreen = ({ navigation }) => {
   const showMetadata = async (photo) => {
     try {
       const asset = await MediaLibrary.getAssetInfoAsync(photo)
-      const metadata = await MediaLibrary.getAssetInfoAsync(asset)
-      setSelectedMetadata({ asset, metadata })
+      const filename = asset.filename
+      const images = await AsyncStorage.getItem('images')
+      const imagesArray = images ? JSON.parse(images) : []
+      const metadata = imagesArray.find(
+        (item) => item.asset.filename === filename
+      )
+      console.log('Metadata:', metadata)
       setMetadataVisible(true)
+      setSelectedMetadata(metadata)
     } catch (error) {
       console.error('Error getting asset metadata:', error)
     }
@@ -68,7 +75,7 @@ const GalleryScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={albumPhotos.concat(savedImages.map((item) => item.asset))}
+        data={albumPhotos.concat(savedImages.map((item) => item.metadata))}
         numColumns={3}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -79,7 +86,7 @@ const GalleryScreen = ({ navigation }) => {
       />
       <MetadataScreen
         visible={metadataVisible}
-        metadata={selectedMetadata?.metadata} // Beachte, dass die Metadaten jetzt von selectedMetadata kommen
+        metadata={selectedMetadata} // Beachte, dass die Metadaten jetzt von selectedMetadata kommen
         onClose={closeMetadataModal}
       />
     </View>
