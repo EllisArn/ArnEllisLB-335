@@ -1,32 +1,22 @@
-import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Text, View } from 'react-native'
-import { useState, useRef } from 'react'
-import * as ImagePicker from 'expo-image-picker'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import * as MediaLibrary from 'expo-media-library'
-import { captureRef } from 'react-native-view-shot'
-import domtoimage from 'dom-to-image'
-import * as Sensors from 'expo-sensors'
-import * as Location from 'expo-location'
+import React from 'react'
+import { NavigationContainer } from '@react-navigation/native'
+import { createStackNavigator } from '@react-navigation/stack'
+import HomeScreen from './screens/HomeScreen'
+import CameraScreen from './screens/CameraScreen'
+import GalleryScreen from './screens/GalleryScreen'
 
-export default function App() {
+const Stack = createStackNavigator()
+
+const App = () => {
   return (
-    <View style={styles.container}>
-      <h1 style={styles.text}>Momentograph</h1>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Camera" component={CameraScreen} />
+        <Stack.Screen name="Gallery" component={GalleryScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    backgroundColor: '#000',
-    color: '#fff',
-  },
-})
+export default App
