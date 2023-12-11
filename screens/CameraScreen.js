@@ -64,6 +64,7 @@ const CameraScreen = () => {
   const takePicture = async () => {
     if (isTakingPicture) return
     setIsTakingPicture(true)
+
     DeviceMotion.setUpdateInterval(1)
     let acceleration = {}
     let accelerationIncludingGravity = {}
@@ -78,6 +79,13 @@ const CameraScreen = () => {
 
     if (cameraRef.current) {
       try {
+        console.log('Taking picture...')
+        const photo = await cameraRef.current.takePictureAsync()
+
+        const asset = await MediaLibrary.createAssetAsync(photo.uri)
+
+        const filename = asset.uri.split('/').pop()
+
         const { coords } = await getLocation()
         const { latitude, longitude } = coords
 
@@ -102,13 +110,6 @@ const CameraScreen = () => {
         const sunsetTime = new Date(
           currentWeather.sunset * 1000
         ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
-        console.log('Taking picture...')
-        const photo = await cameraRef.current.takePictureAsync()
-
-        const asset = await MediaLibrary.createAssetAsync(photo.uri)
-
-        const filename = asset.uri.split('/').pop()
 
         acceleration = Math.sqrt(
           Math.pow(acceleration.x, 2) +
@@ -170,6 +171,7 @@ const CameraScreen = () => {
             },
           ],
         }
+
         await saveImageToDatabase(asset, metadata)
       } catch (error) {
         console.error('Error capturing photo with metadata:', error)
