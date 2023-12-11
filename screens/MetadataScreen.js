@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  Image,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as MediaLibrary from 'expo-media-library'
 
-const MetadataScreen = ({ visible, metadata, onClose }) => {
+const MetadataScreen = ({ visible, metadata, onClose, selectedImageUri }) => {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
@@ -158,8 +159,13 @@ const MetadataScreen = ({ visible, metadata, onClose }) => {
     },
     item: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       marginBottom: 5,
+      alignItems: 'center',
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      width: '100%',
+      justifyContent: 'space-around',
     },
     label: {
       fontWeight: 'bold',
@@ -182,18 +188,31 @@ const MetadataScreen = ({ visible, metadata, onClose }) => {
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.container}>
         <View style={styles.modal}>
-          <Text style={styles.text}>Metadata</Text>
           <FlatList
+            ListHeaderComponent={() => (
+              <>
+                <Image
+                  source={{ uri: selectedImageUri }}
+                  style={{ width: '100%', height: 300, marginBottom: 20 }}
+                  resizeMode="contain"
+                />
+                <Text style={styles.title}>Metadata</Text>
+              </>
+            )}
             data={formattedMetadata}
             renderItem={renderMetadataItem}
             keyExtractor={(item, index) => `${item.key}-${index}`}
           />
-          <TouchableOpacity onPress={handleDeleteImage}>
-            <Text style={styles.closeButton}>Delete Image</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.closeButton}>Close</Text>
-          </TouchableOpacity>
+          <View style={styles.item}>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={handleDeleteImage}>
+                <Text style={styles.closeButton}>Delete Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.closeButton}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
     </Modal>

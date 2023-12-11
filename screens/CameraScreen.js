@@ -236,7 +236,7 @@ const CameraScreen = () => {
     },
     buttonContainer: {
       position: 'absolute',
-      bottom: 60,
+      bottom: 20,
       flexDirection: 'row',
       justifyContent: 'center',
       width: '100%',
@@ -252,12 +252,6 @@ const CameraScreen = () => {
       width: 200,
       height: 200,
       marginTop: 20,
-    },
-    footer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
     },
     tabBar: {
       flexDirection: 'row',
@@ -304,9 +298,7 @@ const CameraScreen = () => {
           )}
         </View>
       )}
-      <View style={styles.footer}>
-        <CustomTabBar />
-      </View>
+      <CustomTabBar />
     </View>
   )
 }

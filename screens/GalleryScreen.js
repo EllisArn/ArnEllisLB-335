@@ -20,6 +20,7 @@ const GalleryScreen = () => {
   const [savedImages, setSavedImages] = useState([])
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [selectedImageUri, setSelectedImageUri] = useState(null)
 
   const loadDarkModeState = async () => {
     const darkModeValue = await AsyncStorage.getItem('darkMode')
@@ -76,6 +77,7 @@ const GalleryScreen = () => {
   const showMetadata = async (photo) => {
     try {
       const asset = await MediaLibrary.getAssetInfoAsync(photo)
+      setSelectedImageUri(photo.uri)
       const filename = asset.filename
       const images = await AsyncStorage.getItem('images')
       const imagesArray = images ? JSON.parse(images) : []
@@ -95,55 +97,6 @@ const GalleryScreen = () => {
     getImagesFromDatabase()
     setRefreshKey((prevKey) => prevKey + 1)
   }
-
-  const windowWidth = useWindowDimensions().width
-  const numColumns = 3
-  const imageWidth = (windowWidth - 20) / numColumns - 10
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: isDarkMode ? '#000' : '#fff',
-    },
-    image: {
-      width: imageWidth,
-      height: imageWidth,
-      margin: 5,
-    },
-    settingItem: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      width: '80%',
-      marginBottom: 20,
-      paddingHorizontal: 10,
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
-    },
-    footer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-    },
-    tabBar: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
-      height: 50,
-    },
-    tabItem: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
-    },
-    text: {
-      color: isDarkMode ? '#fff' : '#000',
-    },
-  })
 
   const filteredAlbumPhotos = albumPhotos.filter(
     (photo) => photo.uri !== null && photo.uri !== undefined
@@ -180,33 +133,66 @@ const GalleryScreen = () => {
       </View>
     )
   }
+  const windowWidth = useWindowDimensions().width
+  const numColumns = 3
+  const imageWidth = (windowWidth - 20) / numColumns - 10
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#000' : '#fff',
+    },
+    image: {
+      width: imageWidth,
+      height: imageWidth,
+      margin: 5,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
+      height: 50,
+    },
+    tabItem: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#eee',
+    },
+    text: {
+      color: isDarkMode ? '#fff' : '#000',
+    },
+  })
   return (
     <View style={styles.container}>
-      <FlatList
-        style={{ flex: 1 }}
-        data={filteredAlbumPhotos.concat(
-          filteredSavedImages.map((item, index) => ({
-            ...item.metadata,
-            id: `saved-${index}`,
-          }))
-        )}
-        numColumns={3}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => showMetadata(item)}>
-            <Image source={{ uri: item.uri }} style={styles.image} />
-          </TouchableOpacity>
-        )}
-      />
+      <View style={{ flex: 1 }}>
+        <FlatList
+          style={{ flex: 1 }}
+          data={filteredAlbumPhotos.concat(
+            filteredSavedImages.map((item, index) => ({
+              ...item.metadata,
+              id: `saved-${index}`,
+            }))
+          )}
+          numColumns={numColumns}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => showMetadata(item)}>
+              <Image source={{ uri: item.uri }} style={styles.image} />
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <CustomTabBar />
       <MetadataScreen
         visible={metadataVisible}
         metadata={selectedMetadata}
         onClose={closeMetadataModal}
+        selectedImageUri={selectedImageUri}
       />
-      <View style={styles.footer}>
-        <CustomTabBar />
-      </View>
     </View>
   )
 }
